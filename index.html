@@ -692,7 +692,7 @@ button, a, [role="button"] { touch-action: manipulation; }
   font-family:'DM Sans',system-ui,sans-serif;
 ">
   <div style="text-align:center; margin-bottom:32px;">
-    <div style="font-size:clamp(1.6rem,5vw,2.6rem); color:#fff; font-weight:500; margin-bottom:8px;">Welcome to ManO CreationS</div>
+    <div style="font-size:clamp(1.6rem,5vw,2.6rem); color:#fff; font-weight:500; margin-bottom:8px;">ManO CreationS</div>
     <div style="font-size:.95rem; color:rgba(255,255,255,.45);">Every Pixel Has a Purpose</div>
   </div>
   <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
@@ -880,36 +880,33 @@ const GOOGLE_CLIENT_ID = "101419655831-dskl4biemo3beh6jh23dtouc8540qirb.apps.goo
 // Keep local responses for instant brand-specific answers
 const LOCAL_RESPONSES = [
   {
-    keywords: ["logo design","branding","brand identity","visiting card","business card","letterhead","bill book","brochure","flyer","book cover","packaging","box design","graphic design","design service","services"],
-    reply: "We design powerful brand identities! Our main services include Logo & Brand Identity, Bill Books, Letterheads, Visiting Cards, Brochures, Flyers, Book Cover Designs, and Box Packaging Design. Every pixel has a purpose here. Ask 'contact' I will share the Details."
+    keywords: ["logo","logo design","branding","brand identity"],
+    reply: "At ManO CreationS, we craft powerful brand identities that help businesses stand out and make a lasting impression. Our core services include Logo & Brand Identity Design, Bill Books, Letterheads, Visiting Cards, Brochures, Flyers, Book Cover Designs, and Box Packaging Design. Every design is created with purpose, creativity, and attention to detail—because every pixel matters. Explore our logo design styles and find the perfect fit for your brand at https://www.manocreations.com/brand-design."
   },
   {
-    keywords: ["hi","hello","hey","hii","hiii","vanakkam","good morning","good afternoon","good evening"],
-    reply: "✨ Welcome to ManO CreationS AI Mode. It's great to have you here! I'm here to help with branding, logo design, graphic design, creative ideas, technical guidance, and everything about ManO CreationS. Ask 'contact' I will share the Details."
+    keywords: ["hi","hello"],
+    reply: "✨ Welcome to ManO CreationS AI Mode. It's great to have you here! I'm here to help with branding, logo design, graphic design, creative ideas, technical guidance, and everything about ManO CreationS."
   },
   {
-    keywords: ["mano creations","founder","ceo","owner","boss"],
-    reply: "Manoj Thiruchelvam founded ManO CreationS in 2016. A self-taught designer with expertise in Photoshop, Illustrator, CorelDRAW, and After Effects, he has been crafting meaningful brand identities that help businesses stand out and leave a lasting impression ever since. Ask 'contact' I will share the Details."
+    keywords: ["mano creations","ceo","owner","boss"],
+    reply: "Behind ManO CreationS is Manoj Thiruchelvam, the Founder & CEO, who has been helping businesses build memorable brands since 2016. With a strong passion for creativity, strategy, and purposeful design, he transforms ideas into distinctive visual identities that leave a lasting impression. Every project reflects a commitment to originality, quality, and meaningful brand storytelling. Learn more about his journey at https://www.manocreations.com/about-founder."
   },
   {
-    keywords: ["kiruthika","kiki","ammu","kiruthi","keerthi"],
-    reply: "Kiruthika, lovingly called Ammu and Kiki, is the Business Advisor at ManO CreationS. She is known for her positive attitude, smart thinking, and dedication. Did you know? …(she is a Mom Now.!)"
+    keywords: ["kiruthika","kiki"],
+    reply: "Kiruthika, lovingly called Ammu and Kiki, is the Business Advisor at ManO CreationS. She is known for her positive attitude, smart thinking, and dedication. Did you know.? ...she is a Mom Now.!"
   },
   {
     keywords: ["pricing","quotation","quote","estimate","logo price","design price","service price","design cost","package"],
-    reply: "Every business deserves a unique identity, and pricing depends on your requirements. For a personalized quotation, email us at ceo@manocreations.com."
+    reply: "Every business deserves a unique identity, which is why every project at ManO CreationS is custom-designed to match your vision and goals. Pricing varies based on your specific requirements and the scope of the project. To explore our starting prices and service packages, visit our pricing page: https://www.manocreations.com/pricing.
+"
   },
   {
     keywords: ["contact us","contact","email address","official email","website","phone number","reach you","mail"],
-    reply: "ManO CreationS\nWhatsApp: 9080354580\nEmail: ceo@manocreations.com\nCall: +91 81 2479 9703"
+    reply: "For any queries, project discussions, or design consultations, feel free to get in touch with ManO CreationS. WhatsApp us: https://wa.me/919080354580  |  Call: +91 81 2479 9703  |  Email: ceo@manocreations.com  |  Follow us on Instagram: https://instagram.com/manocreations.in  |  Subscribe our YouTube Channel: https://www.youtube.com/@ManO_CreationS"
   },
-  {
-    keywords: ["infinity table","welding","fabrication","chair","gate","manufacturing","window","steel"],
-    reply: "Kiruthika Industries\nWhatsApp: 9994956517\nEmail: industries.kiruthika@gmail.com\nCall: +91 99 9495 6517"
-  }
 ];
 
-const CHAT_PLACEHOLDERS = ["Ask me something", "Ask about ManO CreationS", "Ask about our Services", "Scold me for my Mistakes"];
+const CHAT_PLACEHOLDERS = ["Ask me something", "Ask about ManO CreationS", "What are you Thinking", "Scold me for my Mistakes"];
 function getRandomPlaceholder() {
   return CHAT_PLACEHOLDERS[Math.floor(Math.random() * CHAT_PLACEHOLDERS.length)];
 }
@@ -1334,11 +1331,11 @@ async function sendQuery(e) {
 
     } catch (err) {
       console.error("Worker error:", err);
-      targetReply = "Oops, my brain took a little nap! Try again or email ceo@manocreations.com.";
+      targetReply = "Oops, I am Not working! Try again later or Ask ChatGPT or Gemini.";
     }
   }
 
-  responseLabel.textContent = "ManO AI · Response";
+  responseLabel.textContent = "ManO AI";
 
   aiText.classList.remove('typing');
   let i = 0;
@@ -1490,7 +1487,7 @@ function handleGoogleSignIn(response) {
   thread.appendChild(turn);
 
   const greetEl = document.getElementById('greetText');
-  const greeting = `Hey ${userName}! 👋 I'm ManO, a 10-year-old AI from ManO CreationS. Ask me anything about our design services!`;
+  const greeting = `Hey ${userName}! 👋 I'm ManO, an AI from ManO CreationS. Ask me anything about our design services!`;
   let gi = 0;
   const greetInterval = setInterval(() => {
     greetEl.textContent = greeting.slice(0, gi);
