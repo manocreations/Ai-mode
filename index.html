@@ -997,10 +997,24 @@ function initSpeechRecognition() {
     // Recomputing fresh each time makes that impossible.
     let finalText = '';
     let interimText = '';
+    let lastFinalChunk = '';
     for (let i = 0; i < event.results.length; i++) {
       const transcript = event.results[i][0].transcript;
-      if (event.results[i].isFinal) finalText += transcript + ' ';
-      else interimText += transcript;
+      if (event.results[i].isFinal) {
+        const trimmed = transcript.trim();
+        // Some mobile engines (notably Android Chrome) occasionally emit
+        // the SAME word/phrase as two separate consecutive final results
+        // for one utterance (a VAD/endpointer hiccup, not a JS bug) —
+        // e.g. saying "hello" once can produce two final results that
+        // both read "hello". Skip a final result if it's identical
+        // (case-insensitive) to the one immediately before it, so it
+        // isn't typed twice.
+        if (trimmed && trimmed.toLowerCase() === lastFinalChunk.toLowerCase()) continue;
+        finalText += transcript + ' ';
+        lastFinalChunk = trimmed;
+      } else {
+        interimText += transcript;
+      }
     }
     voiceLastFinalText = finalText;
     // Only the portion of the final transcript beyond the last checkpoint
