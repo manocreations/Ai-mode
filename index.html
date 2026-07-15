@@ -224,7 +224,6 @@ button, a, [role="button"] { touch-action: manipulation; }
   animation: micPulse 1.4s ease-in-out infinite;
 }
 .mic-btn.listening svg { stroke: #ff6a4d; }
-.mic-btn.unsupported { display: none; }
 @keyframes micPulse {
   0%,100% { box-shadow: 0 0 0 0 rgba(255,61,0,.35); }
   50% { box-shadow: 0 0 0 9px rgba(255,61,0,0); }
@@ -444,7 +443,7 @@ button, a, [role="button"] { touch-action: manipulation; }
   width: 64px; height: 64px;
   border-radius: 14px;
   overflow: hidden;
-  margin-top: 8px;
+  margin-bottom: 8px;
   border: 1px solid rgba(255,255,255,.14);
   animation: fadeUp .25s ease both;
 }
@@ -479,7 +478,7 @@ button, a, [role="button"] { touch-action: manipulation; }
 .chat-branding {
   display: none;
   align-items: center;
-  justify-content: space-between;
+  grid-template-columns: 1fr auto 1fr;
   gap: 10px;
   margin-top: 14px;
   padding-top: 14px;
@@ -490,13 +489,19 @@ button, a, [role="button"] { touch-action: manipulation; }
   background: transparent;
   z-index: 4;
 }
-.chat-branding.visible { display: flex; }
+/* Grid (not flex) is what makes the disclaimer column sit dead-center:
+   the two 1fr side columns always stay equal width to each other no
+   matter how much content the logo/text on the left or the New-chat
+   button on the right carry, so the middle column's center is always
+   the row's true center — on phones, tablets, and desktop alike. */
+.chat-branding.visible { display: grid; }
 
 .chat-branding-left {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
+  justify-self: start;
 }
 
 .chat-branding-logo {
@@ -552,6 +557,7 @@ button, a, [role="button"] { touch-action: manipulation; }
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  justify-self: end;
 }
 .ai-response-text a {
   color:#ffd54f;
@@ -788,6 +794,11 @@ button, a, [role="button"] { touch-action: manipulation; }
 
       <div class="input-dock" id="inputDock">
       <div class="wrapper-inner">
+      <div class="file-preview-image" id="filePreviewImage">
+        <img id="filePreviewImg" src="" alt="Attached image">
+        <button class="file-badge-remove" onclick="removeFile(event)" aria-label="Remove image">&#x2715;</button>
+      </div>
+
       <div class="search-bar-container">
         <div class="nebula" id="nebula"></div>
         <div class="search-bar" id="searchBar" onmouseenter="primeInput()" onclick="if(event.target===this||event.target.classList.contains('input-row'))activateInput()">
@@ -816,11 +827,6 @@ button, a, [role="button"] { touch-action: manipulation; }
             </svg>
           </button>
         </div>
-      </div>
-
-      <div class="file-preview-image" id="filePreviewImage">
-        <img id="filePreviewImg" src="" alt="Attached image">
-        <button class="file-badge-remove" onclick="removeFile(event)" aria-label="Remove image">&#x2715;</button>
       </div>
       </div>
       </div>
@@ -1115,11 +1121,16 @@ function replaySpeech(btn) {
   window.speechSynthesis.speak(utter);
 }
 
-// Hide the mic entirely on browsers with no speech-recognition support
-// (e.g. some older/desktop browsers) rather than showing a dead button.
+// Mic stays visible on every device, including desktop. Browsers without
+// Web Speech API support (mainly desktop Firefox) can't actually listen,
+// but instead of hiding the button we let toggleVoiceInput()'s existing
+// "Not supported here" tooltip explain that on click, so desktop users
+// on supporting browsers (Chrome, Edge, desktop Safari) always get a
+// working mic, and everyone else still sees the control with a clear
+// reason it can't be used yet.
 if (!getSpeechRecognitionCtor()) {
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('micBtn')?.classList.add('unsupported');
+    document.getElementById('micBtn')?.setAttribute('data-tip', 'Not supported here');
   });
 }
 
@@ -1276,6 +1287,13 @@ function formatAIReply(text) {
     lastIndex = match.index + full.length;
   }
   result += escapeHtml(text.slice(lastIndex));
+
+  // Convert **bold** markdown into real <strong> tags. Applied after the
+  // link/email/phone pass above (which already escaped all plain-text
+  // segments), so the ** markers are still literal characters here and
+  // safe to match without touching anything inside the <a> tags we just
+  // inserted.
+  result = result.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
   return result.replace(/\n/g, "<br>");
 }
