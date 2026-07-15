@@ -1470,11 +1470,17 @@ async function sendQuery(e) {
 
   const lowerQuery = query.toLowerCase();
   let targetReply = null;
+  const hasImage = hadFile && attachedFile.type && attachedFile.type.startsWith('image/') && !!attachedFileDataURL;
 
-  for (const item of LOCAL_RESPONSES) {
-    if (item.keywords.some(k => lowerQuery.includes(k))) {
-      targetReply = item.reply;
-      break;
+  // Canned keyword replies can't see the image, so skip them whenever one
+  // is attached and always defer to the worker (which gets the image data
+  // below) instead of guessing from the caption text alone.
+  if (!hasImage) {
+    for (const item of LOCAL_RESPONSES) {
+      if (item.keywords.some(k => lowerQuery.includes(k))) {
+        targetReply = item.reply;
+        break;
+      }
     }
   }
 
@@ -1485,7 +1491,14 @@ async function sendQuery(e) {
       const response = await fetch(WORKER_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: query, history: conversationHistory }),
+        body: JSON.stringify({
+          message: query,
+          history: conversationHistory,
+          // attachedFileDataURL is a full data: URL (e.g. "data:image/png;base64,...").
+          // The worker needs to pull the base64 payload + mime type out of it and
+          // pass them to a vision-capable model — a text-only model will ignore this.
+          image: hasImage ? attachedFileDataURL : undefined,
+        }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
