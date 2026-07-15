@@ -143,26 +143,6 @@ button, a, [role="button"] { touch-action: manipulation; }
 }
 .plus-btn:hover::after { opacity: 1; }
 
-.file-badge {
-  display: none;
-  align-items: center; gap: 6px;
-  margin-top: 8px;
-  padding: 5px 12px;
-  background: rgba(0,205,147,.1);
-  border: 1px solid rgba(0,205,147,.3);
-  border-radius: 100px;
-  font-size: 11px; color: #80ffe1;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  letter-spacing: .3px;
-  animation: fadeUp .25s ease both;
-  max-width: 100%;
-  overflow: hidden;
-}
-.file-badge.visible { display: inline-flex; }
-.file-badge-name {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  max-width: 320px;
-}
 .file-badge-remove {
   flex-shrink: 0;
   cursor: pointer;
@@ -358,18 +338,6 @@ button, a, [role="button"] { touch-action: manipulation; }
   border-radius: 18px 18px 4px 18px;
   white-space: pre-wrap;
   word-break: break-word;
-}
-.chat-user-file {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  padding: 4px 10px;
-  font-size: 11px;
-  color: #80ffe1;
-  background: rgba(0,205,147,.1);
-  border: 1px solid rgba(0,205,147,.3);
-  border-radius: 100px;
 }
 
 .chat-assistant-row {
@@ -585,25 +553,6 @@ button, a, [role="button"] { touch-action: manipulation; }
   gap: 8px;
   flex-shrink: 0;
 }
-.voice-toggle-btn {
-  flex-shrink: 0;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: background .2s, transform .15s;
-}
-.voice-toggle-btn:hover { background: rgba(138,180,248,.16); }
-.voice-toggle-btn:active { transform: scale(.92); }
-.voice-toggle-btn svg {
-  width: 14px; height: 14px;
-  fill: none; stroke: rgba(255,255,255,.75);
-  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-}
-.voice-toggle-btn.enabled { background: rgba(0,205,147,.15); border-color: rgba(0,205,147,.3); }
-.voice-toggle-btn.enabled svg { stroke: #80ffe1; }
 .ai-response-text a {
   color:#ffd54f;
   text-decoration:underline;
@@ -661,10 +610,8 @@ button, a, [role="button"] { touch-action: manipulation; }
   .chat-user-bubble { font-size: .79rem; }
   .ai-response-text { font-size: .81rem; }
   .ai-response-label { font-size: 9.5px; }
-  .chat-user-file { font-size: 9.5px; }
   .ai-badge { margin-bottom: 14px; flex: 0 0 auto; }
   .ai-response-panel { margin: 0 auto 0; }
-  .file-badge { margin-top: 6px; }
   .disclaimer-text { font-size: 9.75px; margin-top: 8px; }
   .chat-branding .disclaimer-text { font-size: 8.5px; padding: 0 8px; margin-top: 0; }
   .chat-branding-text { font-size: 9.5px; }
@@ -828,12 +775,6 @@ button, a, [role="button"] { touch-action: manipulation; }
           </div>
           <div class="disclaimer-text" id="chatBrandingDisclaimer">ManO is also AI &amp; can make mistakes - sorry in Advance</div>
           <div class="chat-branding-right">
-            <button class="voice-toggle-btn" id="voiceToggleBtn" onclick="toggleVoiceOutput(event)" aria-label="Toggle spoken replies" data-tip="Voice replies">
-              <svg viewBox="0 0 24 24" id="voiceToggleIcon">
-                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-              </svg>
-            </button>
             <button class="new-chat-btn" id="newChatBtn" onclick="startNewChat()" aria-label="Start new chat">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <line x1="12" y1="5" x2="12" y2="19"/>
@@ -850,8 +791,8 @@ button, a, [role="button"] { touch-action: manipulation; }
       <div class="search-bar-container">
         <div class="nebula" id="nebula"></div>
         <div class="search-bar" id="searchBar" onmouseenter="primeInput()" onclick="if(event.target===this||event.target.classList.contains('input-row'))activateInput()">
-          <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="onFileSelected(event)">
-          <button class="plus-btn" aria-label="Upload file" id="uploadBtn" data-tip="Attach file" onclick="document.getElementById('fileInput').click(); event.stopPropagation();">
+          <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="onFileSelected(event)">
+          <button class="plus-btn" aria-label="Upload image" id="uploadBtn" data-tip="Attach image" onclick="document.getElementById('fileInput').click(); event.stopPropagation();">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -875,12 +816,6 @@ button, a, [role="button"] { touch-action: manipulation; }
             </svg>
           </button>
         </div>
-      </div>
-
-      <div class="file-badge" id="fileBadge">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#80ffe1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        <span class="file-badge-name" id="fileBadgeName"></span>
-        <button class="file-badge-remove" onclick="removeFile(event)" aria-label="Remove file">&#x2715;</button>
       </div>
 
       <div class="file-preview-image" id="filePreviewImage">
@@ -1038,7 +973,6 @@ let isListening = false;
 let voiceCheckpointText = '';    // box contents as of session start or last manual edit
 let voiceCheckpointFinalLen = 0; // how much of the recomputed final transcript was already folded into voiceCheckpointText
 let voiceLastFinalText = '';     // most recent full final transcript (recomputed fresh each event)
-let voiceOutputEnabled = false;
 
 function getSpeechRecognitionCtor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -1138,27 +1072,6 @@ document.getElementById('heroInput').addEventListener('input', () => {
   }
 });
 
-function speakText(text) {
-  if (!('speechSynthesis' in window) || !text) return;
-  const clean = text.replace(/<[^>]+>/g, '').trim();
-  if (!clean) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(clean);
-  utter.rate = 1;
-  utter.pitch = 1;
-  utter.lang = (navigator.language || 'en-US');
-  window.speechSynthesis.speak(utter);
-}
-
-function toggleVoiceOutput(e) {
-  if (e) e.stopPropagation();
-  voiceOutputEnabled = !voiceOutputEnabled;
-  const btn = document.getElementById('voiceToggleBtn');
-  btn.classList.toggle('enabled', voiceOutputEnabled);
-  btn.setAttribute('data-tip', voiceOutputEnabled ? 'Voice replies on' : 'Voice replies off');
-  if (!voiceOutputEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
-}
-
 function replaySpeech(btn) {
   const body = btn.closest('.chat-assistant-body');
   if (!body) return;
@@ -1224,31 +1137,31 @@ function updateWelcomeText() {
 function onFileSelected(e) {
   const file = e.target.files[0];
   if (!file) return;
+
+  // The picker is restricted to images via accept="image/*", but some
+  // browsers/OS file dialogs let a user override that filter — guard
+  // against a non-image slipping through instead of silently mishandling it.
+  if (!file.type || !file.type.startsWith('image/')) {
+    e.target.value = '';
+    return;
+  }
+
   attachedFile = file;
   attachedFileDataURL = null;
   const btn = document.getElementById('uploadBtn');
-  const badge = document.getElementById('fileBadge');
-  const badgeName = document.getElementById('fileBadgeName');
   const preview = document.getElementById('filePreviewImage');
   const previewImg = document.getElementById('filePreviewImg');
   btn.classList.add('has-file');
-  btn.setAttribute('data-tip', 'Change file');
+  btn.setAttribute('data-tip', 'Change image');
 
-  if (file.type && file.type.startsWith('image/')) {
-    badge.classList.remove('visible');
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      attachedFileDataURL = ev.target.result;
-      previewImg.src = attachedFileDataURL;
-      preview.classList.add('visible');
-    };
-    reader.readAsDataURL(file);
-  } else {
-    preview.classList.remove('visible');
-    previewImg.src = '';
-    badgeName.textContent = file.name;
-    badge.classList.add('visible');
-  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    attachedFileDataURL = ev.target.result;
+    previewImg.src = attachedFileDataURL;
+    preview.classList.add('visible');
+  };
+  reader.readAsDataURL(file);
+
   document.getElementById('heroInput').focus();
 }
 
@@ -1259,8 +1172,7 @@ function removeFile(e) {
   document.getElementById('fileInput').value = '';
   const btn = document.getElementById('uploadBtn');
   btn.classList.remove('has-file');
-  btn.setAttribute('data-tip', 'Attach file');
-  document.getElementById('fileBadge').classList.remove('visible');
+  btn.setAttribute('data-tip', 'Attach image');
   const preview = document.getElementById('filePreviewImage');
   const previewImg = document.getElementById('filePreviewImg');
   if (preview) preview.classList.remove('visible');
@@ -1365,19 +1277,12 @@ function createChatTurn(query) {
   userBubble.className = 'chat-user-bubble';
   userBubble.textContent = query;
 
-  if (attachedFile) {
-    if (attachedFile.type && attachedFile.type.startsWith('image/') && attachedFileDataURL) {
-      const img = document.createElement('img');
-      img.className = 'chat-user-image';
-      img.src = attachedFileDataURL;
-      img.alt = attachedFile.name;
-      userBubble.insertBefore(img, userBubble.firstChild);
-    } else {
-      const fileTag = document.createElement('div');
-      fileTag.className = 'chat-user-file';
-      fileTag.textContent = '📎 ' + attachedFile.name;
-      userBubble.appendChild(fileTag);
-    }
+  if (attachedFile && attachedFileDataURL) {
+    const img = document.createElement('img');
+    img.className = 'chat-user-image';
+    img.src = attachedFileDataURL;
+    img.alt = attachedFile.name;
+    userBubble.insertBefore(img, userBubble.firstChild);
   }
   userRow.appendChild(userBubble);
 
@@ -1541,7 +1446,6 @@ async function sendQuery(e) {
       // via the send icon — respect that they closed it, and let them tap
       // the search bar again when they're ready to type the next message.
       if (!sentViaSendButton) input.focus();
-      if (voiceOutputEnabled) speakText(targetReply);
     }
   }, 12);
 
@@ -1679,7 +1583,6 @@ function handleGoogleSignIn(response) {
       greetEl.dataset.rawText = greeting;
       greetEl.classList.remove('typing');
       clearInterval(greetInterval);
-      if (voiceOutputEnabled) speakText(greeting);
     }
   }, 12);
 }
