@@ -453,6 +453,60 @@ button, a, [role="button"] { touch-action: manipulation; }
   font-family: 'DM Sans', system-ui, sans-serif;
   animation: fadeUp .4s ease .3s both;
 }
+/* When the disclaimer lives inside the branding row (above the search
+   bar, between "Powered by ManOzee" and the sound button) it needs to
+   sit inline with proper breathing room on both sides instead of its
+   own stacked block. */
+.chat-branding .disclaimer-text {
+  margin-top: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10.5px;
+  padding: 0 14px;
+  animation: none;
+}
+
+.file-preview-image {
+  display: none;
+  position: relative;
+  width: 64px; height: 64px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 8px;
+  border: 1px solid rgba(255,255,255,.14);
+  animation: fadeUp .25s ease both;
+}
+.file-preview-image.visible { display: inline-block; }
+.file-preview-image img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.file-preview-image .file-badge-remove {
+  position: absolute; top: 3px; right: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.65);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  opacity: 1;
+  padding: 0;
+}
+.file-preview-image .file-badge-remove:hover { background: rgba(0,0,0,.85); }
+
+.chat-user-image {
+  display: block;
+  width: 200px;
+  max-width: 100%;
+  border-radius: 16px;
+  margin-bottom: 6px;
+  object-fit: cover;
+}
 
 .chat-branding {
   display: none;
@@ -612,6 +666,7 @@ button, a, [role="button"] { touch-action: manipulation; }
   .ai-response-panel { margin: 0 auto 0; }
   .file-badge { margin-top: 6px; }
   .disclaimer-text { font-size: 9.75px; margin-top: 8px; }
+  .chat-branding .disclaimer-text { font-size: 8.5px; padding: 0 8px; margin-top: 0; }
   .chat-branding-text { font-size: 9.5px; }
   .new-chat-btn { font-size: 10px; padding: 6px 11px; min-height: 32px; }
   .chat-branding { flex: 0 0 auto; }
@@ -675,7 +730,58 @@ button, a, [role="button"] { touch-action: manipulation; }
   body.keyboard-open .ai-response-inner {
     max-height: 38vh;
   }
+
+  /* Once a chat is active: cap the hero to the viewport (no page scroll),
+     let the branding row + search bar stay put at the bottom of the
+     column, and make the chat thread the only scrollable piece —
+     mirroring the mobile fixed-dock behavior above. */
+  body.chat-active {
+    overflow: hidden;
+    height: 100%;
+  }
+  body.chat-active .hero {
+    height: 100vh;
+    height: calc(var(--app-vh, 1vh) * 100);
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
+  }
+  body.chat-active .hero-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+  body.chat-active .ai-badge {
+    display: none !important;
+  }
+  body.chat-active .wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    justify-content: flex-end;
+  }
+  body.chat-active .ai-response-panel.visible {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+  body.chat-active .ai-response-inner {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+  body.chat-active .chat-branding,
+  body.chat-active .input-dock {
+    flex: 0 0 auto;
+  }
 }
+
 </style>
 <script>if ('scrollRestoration' in history) history.scrollRestoration = 'manual';</script>
 </head>
@@ -720,6 +826,7 @@ button, a, [role="button"] { touch-action: manipulation; }
             </div>
             <div class="chat-branding-text">Powered by <b>ManOzee</b></div>
           </div>
+          <div class="disclaimer-text" id="chatBrandingDisclaimer">ManO is also AI &amp; can make mistakes - sorry in Advance</div>
           <div class="chat-branding-right">
             <button class="voice-toggle-btn" id="voiceToggleBtn" onclick="toggleVoiceOutput(event)" aria-label="Toggle spoken replies" data-tip="Voice replies">
               <svg viewBox="0 0 24 24" id="voiceToggleIcon">
@@ -776,7 +883,10 @@ button, a, [role="button"] { touch-action: manipulation; }
         <button class="file-badge-remove" onclick="removeFile(event)" aria-label="Remove file">&#x2715;</button>
       </div>
 
-      <div class="disclaimer-text">ManO is also AI & can make mistakes - sorry in Advance</div>
+      <div class="file-preview-image" id="filePreviewImage">
+        <img id="filePreviewImg" src="" alt="Attached image">
+        <button class="file-badge-remove" onclick="removeFile(event)" aria-label="Remove image">&#x2715;</button>
+      </div>
       </div>
       </div>
     </div>
@@ -918,6 +1028,7 @@ let userName = '';
 let userPicture = '';
 let userEmail = '';
 let attachedFile = null;
+let attachedFileDataURL = null;
 let messageCount = 0;
 let conversationHistory = [];
 
@@ -1114,24 +1225,46 @@ function onFileSelected(e) {
   const file = e.target.files[0];
   if (!file) return;
   attachedFile = file;
+  attachedFileDataURL = null;
   const btn = document.getElementById('uploadBtn');
   const badge = document.getElementById('fileBadge');
   const badgeName = document.getElementById('fileBadgeName');
+  const preview = document.getElementById('filePreviewImage');
+  const previewImg = document.getElementById('filePreviewImg');
   btn.classList.add('has-file');
   btn.setAttribute('data-tip', 'Change file');
-  badgeName.textContent = file.name;
-  badge.classList.add('visible');
+
+  if (file.type && file.type.startsWith('image/')) {
+    badge.classList.remove('visible');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      attachedFileDataURL = ev.target.result;
+      previewImg.src = attachedFileDataURL;
+      preview.classList.add('visible');
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.classList.remove('visible');
+    previewImg.src = '';
+    badgeName.textContent = file.name;
+    badge.classList.add('visible');
+  }
   document.getElementById('heroInput').focus();
 }
 
 function removeFile(e) {
   if (e && e.stopPropagation) e.stopPropagation();
   attachedFile = null;
+  attachedFileDataURL = null;
   document.getElementById('fileInput').value = '';
   const btn = document.getElementById('uploadBtn');
   btn.classList.remove('has-file');
   btn.setAttribute('data-tip', 'Attach file');
   document.getElementById('fileBadge').classList.remove('visible');
+  const preview = document.getElementById('filePreviewImage');
+  const previewImg = document.getElementById('filePreviewImg');
+  if (preview) preview.classList.remove('visible');
+  if (previewImg) previewImg.src = '';
 }
 
 function primeInput() {
@@ -1157,6 +1290,7 @@ function startNewChat() {
   thread.innerHTML = '';
   panel.classList.remove('visible');
   branding.classList.remove('visible');
+  document.body.classList.remove('chat-active');
   messageCount = 0;
   conversationHistory = [];
   removeFile(null);
@@ -1232,10 +1366,18 @@ function createChatTurn(query) {
   userBubble.textContent = query;
 
   if (attachedFile) {
-    const fileTag = document.createElement('div');
-    fileTag.className = 'chat-user-file';
-    fileTag.textContent = '📎 ' + attachedFile.name;
-    userBubble.appendChild(fileTag);
+    if (attachedFile.type && attachedFile.type.startsWith('image/') && attachedFileDataURL) {
+      const img = document.createElement('img');
+      img.className = 'chat-user-image';
+      img.src = attachedFileDataURL;
+      img.alt = attachedFile.name;
+      userBubble.insertBefore(img, userBubble.firstChild);
+    } else {
+      const fileTag = document.createElement('div');
+      fileTag.className = 'chat-user-file';
+      fileTag.textContent = '📎 ' + attachedFile.name;
+      userBubble.appendChild(fileTag);
+    }
   }
   userRow.appendChild(userBubble);
 
@@ -1312,6 +1454,7 @@ async function sendQuery(e) {
 
   panel.classList.add('visible');
   branding.classList.add('visible');
+  document.body.classList.add('chat-active');
 
   const { responseLabel, aiText } = createChatTurn(query);
   input.value = '';
@@ -1485,6 +1628,7 @@ function handleGoogleSignIn(response) {
   const branding = document.getElementById('chatBranding');
   panel.classList.add('visible');
   branding.classList.add('visible');
+  document.body.classList.add('chat-active');
 
   const thread = document.getElementById('chatThread');
   const turn = document.createElement('div');
@@ -1511,7 +1655,7 @@ function handleGoogleSignIn(response) {
   thread.appendChild(turn);
 
   const greetEl = document.getElementById('greetText');
-  const greeting = `Hey ${userName}! 👋 I'm ManO, an AI from ManO CreationS. Ask me anything about our design services!`;
+  const greeting = `👋 Great to have you here, ${userName}! I'm ManO, your creative AI from ManO CreationS. How can I help you today?`;
   let gi = 0;
   const greetInterval = setInterval(() => {
     greetEl.textContent = greeting.slice(0, gi);
