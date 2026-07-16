@@ -493,6 +493,37 @@ button, a, [role="button"] { touch-action: manipulation; }
   object-fit: cover;
 }
 
+.ai-response-image-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 320px;
+  margin: 10px 0 4px;
+}
+.ai-response-image {
+  display: block;
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.ai-response-image-download {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.6);
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: background .15s;
+}
+.ai-response-image-download:hover { background: rgba(0,0,0,.85); }
+.ai-response-image-download svg {
+  width: 14px; height: 14px;
+  fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
 .chat-branding {
   display: none;
   align-items: center;
@@ -964,6 +995,11 @@ if (isCoarsePointer) {
 // bottom-anchored), so no manual scroll is needed to keep it visible.
 
 // ===== WORKER CONFIGURATION =====
+// Expected worker response: { reply: string, image?: string }
+// `image`, if present, must be a full data: URL (e.g.
+// "data:image/png;base64,...") built from Gemini's inlineData part —
+// see the Gemini image-generation docs for the { data, mimeType } shape
+// returned by image-capable models like gemini-2.5-flash-image.
 const WORKER_URL = "https://mano-ai.manojsalem98.workers.dev/";
 // ================================
 
@@ -1419,8 +1455,33 @@ function createChatTurn(query) {
 
   return {
     responseLabel: assistantRow.querySelector('.ai-response-label'),
-    aiText: assistantRow.querySelector('.ai-response-text')
+    aiText: assistantRow.querySelector('.ai-response-text'),
+    aiBody: assistantRow.querySelector('.chat-assistant-body')
   };
+}
+
+// Renders a base64 image returned by the worker (Gemini image-generation
+// models return this as inlineData: { data, mimeType }) as an <img> in
+// the chat, with a small download button. Call after the text has
+// finished typing so it doesn't shift layout mid-animation.
+function renderAIImage(container, dataUrl) {
+  if (!container || !dataUrl) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-response-image-wrap';
+  wrap.innerHTML = `
+    <img class="ai-response-image" src="${dataUrl}" alt="Generated image">
+    <button class="ai-response-image-download" aria-label="Download image" title="Download">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+    </button>
+  `;
+  wrap.querySelector('.ai-response-image-download').onclick = () => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'mano-ai-image.png';
+    a.click();
+  };
+  container.appendChild(wrap);
+  document.getElementById('chatThread').scrollTop = document.getElementById('chatThread').scrollHeight;
 }
 
 async function sendQuery(e) {
@@ -1460,7 +1521,7 @@ async function sendQuery(e) {
   branding.classList.add('visible');
   document.body.classList.add('chat-active');
 
-  const { responseLabel, aiText } = createChatTurn(query);
+  const { responseLabel, aiText, aiBody } = createChatTurn(query);
   input.value = '';
   autoResizeInput();
   const hadFile = !!attachedFile;
@@ -1475,6 +1536,7 @@ async function sendQuery(e) {
 
   const lowerQuery = query.toLowerCase();
   let targetReply = null;
+  let generatedImage = null;
   const hasImage = hadFile && attachedFile.type && attachedFile.type.startsWith('image/') && !!attachedFileDataURL;
 
   // Canned keyword replies can't see the image, so skip them whenever one
@@ -1516,6 +1578,10 @@ async function sendQuery(e) {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       targetReply = data.reply || "Hmm, I couldn't find an answer. Try asking about our services or pricing!";
+      // If the worker called an image-generation model, it comes back as
+      // a data: URL (base64 PNG/JPEG) on data.image — see the worker-side
+      // note near WORKER_URL above for the expected response shape.
+      generatedImage = data.image || null;
 
       // Save to history
       conversationHistory.push({ role: "user", content: query });
@@ -1548,6 +1614,7 @@ async function sendQuery(e) {
       triggerNebula(false);
       sendBtn.classList.remove('loading');
       sendIcon.innerHTML = '<path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>';
+      renderAIImage(aiBody, generatedImage);
       thread.scrollTop = thread.scrollHeight;
       input.placeholder = getRandomPlaceholder();
       // Don't reopen the keyboard automatically if the person sent this
