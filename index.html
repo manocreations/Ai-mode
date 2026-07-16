@@ -304,13 +304,20 @@ button, a, [role="button"] { touch-action: manipulation; }
 .ai-response-inner {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 22px;
   max-height: 60vh;
   overflow-y: auto;
   padding: 4px 4px 4px 0;
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+/* Bottom-anchor short conversations (e.g. just the welcome message) via
+   margin instead of justify-content:flex-end — flex-end on a scrollable
+   column is a known flexbox bug that pushes overflowing content above
+   the reachable scroll range, making it impossible to scroll back up to
+   earlier messages once the thread grows past the visible area. */
+.ai-response-inner > *:first-child {
+  margin-top: auto;
 }
 .ai-response-inner::-webkit-scrollbar { display: none; }
 
