@@ -65,28 +65,32 @@ button, a, [role="button"] { touch-action: manipulation; }
   position: absolute;
   left: 0; right: 0;
   top: 50%; translate: 0 -50%;
-  height: 62px; border-radius: 100px;
+  height: 62px; min-height: 62px; border-radius: 100px;
   background: conic-gradient(from var(--angle), #4285f4, #b100cd, #ff3d00, #ffd000, #4285f4);
   filter: blur(18px); opacity: .6; z-index: 1; pointer-events: none;
   animation: flowFade 3s ease-out forwards;
+  transition: height .12s ease, border-radius .12s ease;
 }
 .nebula.active {
   animation: flowLoop 3s linear infinite;
   opacity: 0.6;
 }
+.nebula.multiline { border-radius: 24px; }
 .search-bar-container {
   position: relative;
   width: 100%;
-  height: 62px;
+  min-height: 62px;
 }
 .search-bar {
-  position: relative; height: 62px; border-radius: 100px;
+  position: relative; min-height: 62px; border-radius: 100px;
   background: #121212;
-  display: flex; align-items: center;
-  padding: 0 16px 0 22px;
+  display: flex; align-items: flex-end;
+  padding: 11px 16px 11px 22px;
   z-index: 2; gap: 10px;
   cursor: text;
+  transition: border-radius .12s ease;
 }
+.search-bar.multiline { border-radius: 24px; }
 .search-bar::before {
   content: "";
   position: absolute; inset: -1.5px; border-radius: 100px; padding: 1.5px;
@@ -161,22 +165,28 @@ button, a, [role="button"] { touch-action: manipulation; }
 }
 .typed-text {
   font-size: clamp(1rem, 4vw, 1.35rem);
+  line-height: 1.35;
   font-weight: 400;
   color: #fff;
   font-family: 'DM Sans', system-ui, sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+  overflow-x: hidden;
+  resize: none;
   width: 100%;
-  height: 100%;
+  max-height: 160px;
   text-align: left;
   background: transparent;
   border: none;
   outline: none;
   caret-color: #8ab4f8;
   padding: 0;
+  margin: 0;
   user-select: text;
   -webkit-user-select: text;
   cursor: text;
+  scrollbar-width: thin;
 }
 .typed-text::placeholder { color: rgba(255,255,255,.45); font-weight: 400; }
 
@@ -551,6 +561,33 @@ button, a, [role="button"] { touch-action: manipulation; }
   fill: none; stroke: currentColor;
   stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
 }
+.new-chat-btn {
+  position: relative;
+}
+.new-chat-btn::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: rgba(20,20,20,.95);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: .2px;
+  line-height: 1.35;
+  white-space: normal;
+  width: 170px;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .18s, transform .18s;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  z-index: 5;
+}
+.new-chat-btn:hover::after { opacity: 1; transform: translateY(0); }
 
 .chat-branding-right {
   display: flex;
@@ -634,6 +671,7 @@ button, a, [role="button"] { touch-action: manipulation; }
   /* Keep the tooltip from covering content awkwardly on touch (no hover state) */
   .plus-btn::after { display: none; }
   .mic-btn::after { display: none; }
+  .new-chat-btn::after { display: none; }
 
   .chat-branding {
     padding-bottom: env(safe-area-inset-bottom);
@@ -781,7 +819,7 @@ button, a, [role="button"] { touch-action: manipulation; }
           </div>
           <div class="disclaimer-text" id="chatBrandingDisclaimer">Don't trust every response from ManO AI.</div>
           <div class="chat-branding-right">
-            <button class="new-chat-btn" id="newChatBtn" onclick="startNewChat()" aria-label="Start new chat">
+            <button class="new-chat-btn" id="newChatBtn" onclick="startNewChat()" aria-label="Start new chat" data-tip="Creating a new chat will delete this chat history">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
@@ -810,7 +848,7 @@ button, a, [role="button"] { touch-action: manipulation; }
             </svg>
           </button>
           <div class="input-row">
-            <input class="typed-text" id="heroInput" type="text" value="" spellcheck="false" autocomplete="off" autocapitalize="sentences" inputmode="text" enterkeyhint="send" readonly onfocus="this.removeAttribute('readonly')">
+            <textarea class="typed-text" id="heroInput" rows="1" spellcheck="false" autocomplete="off" autocapitalize="sentences" inputmode="text" enterkeyhint="send" readonly onfocus="this.removeAttribute('readonly')"></textarea>
           </div>
           <button class="mic-btn" id="micBtn" aria-label="Voice input" data-tip="Speak" onclick="toggleVoiceInput(event)">
             <svg viewBox="0 0 24 24" id="micIcon">
@@ -1031,6 +1069,7 @@ function initSpeechRecognition() {
     // Text lands in the (still fully editable) search box — nothing is
     // ever auto-sent; the person reviews/edits, then taps send themselves.
     input.value = (voiceCheckpointText + newFinal + interimText).replace(/\s+/g, ' ').trimStart();
+    autoResizeInput();
   };
 
   r.onerror = () => stopListening();
@@ -1090,7 +1129,25 @@ document.getElementById('heroInput').addEventListener('input', () => {
     voiceCheckpointText = document.getElementById('heroInput').value;
     voiceCheckpointFinalLen = voiceLastFinalText.length;
   }
+  autoResizeInput();
 });
+
+// Grow the pill into a rounded box as the person types multiple lines
+// (Shift+Enter for a newline, Enter to send), instead of clipping text
+// to a single line. Caps out at CSS max-height, after which the textarea
+// scrolls internally.
+function autoResizeInput() {
+  const input = document.getElementById('heroInput');
+  const searchBar = document.getElementById('searchBar');
+  const nebula = document.getElementById('nebula');
+  if (!input) return;
+  const lineHeight = parseFloat(getComputedStyle(input).lineHeight) || 22;
+  input.style.height = 'auto';
+  input.style.height = input.scrollHeight + 'px';
+  const multiline = input.scrollHeight > lineHeight * 1.5;
+  searchBar?.classList.toggle('multiline', multiline);
+  nebula?.classList.toggle('multiline', multiline);
+}
 
 function replaySpeech(btn) {
   const body = btn.closest('.chat-assistant-body');
@@ -1211,6 +1268,7 @@ function primeInput() {
   isIntroActive = false;
   input.value = '';
   input.placeholder = getRandomPlaceholder();
+  autoResizeInput();
 }
 
 function activateInput() {
@@ -1234,6 +1292,7 @@ function startNewChat() {
   updateWelcomeText();
   input.value = '';
   input.placeholder = getRandomPlaceholder();
+  autoResizeInput();
   isLoading = false;
   triggerNebula(false);
   input.focus();
@@ -1395,6 +1454,7 @@ async function sendQuery(e) {
 
   const { responseLabel, aiText } = createChatTurn(query);
   input.value = '';
+  autoResizeInput();
   const hadFile = !!attachedFile;
 
   // Check local responses first (instant, no API call)
@@ -1412,9 +1472,17 @@ async function sendQuery(e) {
   // Canned keyword replies can't see the image, so skip them whenever one
   // is attached and always defer to the worker (which gets the image data
   // below) instead of guessing from the caption text alone.
+  //
+  // Match whole words/phrases only (word-boundary regex), not raw
+  // substrings. Plain `.includes()` matched short keywords like "hi"
+  // inside completely unrelated words ("this", "think", "history",
+  // "white"...), so any sufficiently long message was almost guaranteed
+  // to contain "hi" somewhere and always got the canned welcome reply
+  // instead of a real answer.
+  const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (!hasImage) {
     for (const item of LOCAL_RESPONSES) {
-      if (item.keywords.some(k => lowerQuery.includes(k))) {
+      if (item.keywords.some(k => new RegExp(`(?:^|\\W)${escapeRegExp(k)}(?:$|\\W)`).test(lowerQuery))) {
         targetReply = item.reply;
         break;
       }
@@ -1485,10 +1553,13 @@ async function sendQuery(e) {
 }
 
 document.getElementById('heroInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.isComposing) {
+  if (e.key === 'Enter' && !e.isComposing && !e.shiftKey) {
     e.preventDefault();
     sendQuery(e);
   }
+  // Shift+Enter falls through and lets the textarea insert its own
+  // newline; autoResizeInput() (bound to the 'input' event) grows the
+  // box to fit right after.
 });
 
 document.addEventListener('keydown', (e) => {
